@@ -35,6 +35,13 @@ public:
     ~server_error() override = default;
 };
 
+class exec_error : public an_error {
+public:
+    exec_error() : an_error() {}
+    explicit exec_error(const string& arg) : an_error(arg) {}
+    ~exec_error() override = default;
+};
+
 
 
 #endif //SERVER_SERVER_UTILS_H

@@ -43,12 +43,17 @@ namespace {
     }
 
     TEST(SOCKET, CONTRACT) {
+        base_socket some(uniq_fd(socket(0, 0, 0)));
+        some.invoke(0);
+    }
+
+    TEST(SKIP, SKIP1) {
         GTEST_SKIP();
         int u = socket(AF_INET, SOCK_STREAM, 0);
         int v = socket(AF_INET, SOCK_STREAM, 0);
         base_socket s((uniq_fd(u)));
         base_socket t((uniq_fd(v)));
-        
+
         sockaddr_in local_addr;
         local_addr.sin_family = AF_INET;
         local_addr.sin_addr.s_addr = 0;
@@ -66,8 +71,9 @@ namespace {
         const string msg = "hello world!";
         char e[msg.size()];
         t.write_c(msg.c_str(), msg.size());
-        
+
         s.read_c(e, msg.size());
         EXPECT_EQ(msg, string(e));
     }
+
 }
