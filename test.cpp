@@ -14,6 +14,7 @@
 #include "socket.h"
 #include "processor.h"
 #include "echo_server.h"
+#include "addr_info_server.h"
 
 namespace {
     using namespace std;
@@ -30,7 +31,7 @@ namespace {
             "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
     };
 
-    const uint16_t PORT = 14000;
+    const uint16_t PORT = 13000;
     bool started = false;
 
     TEST(UTIL_TEST, GET_ADDR_FUNCTIONAL) {
@@ -79,7 +80,7 @@ namespace {
         echo_server t(&p, 15001);
     }
 
-    TEST(ECHO, CONNECT_ONCE) {
+    TEST(ECHO, CONNECT) {
         pthread_t f;
         pthread_create(&f, NULL, [](void *) -> void * {
             processor p;
@@ -91,28 +92,72 @@ namespace {
         while(!started) {
             usleep(10);
         }
+        for(int i = 0; i < 31; ++i) {
+            int v = socket(AF_INET, SOCK_STREAM, 0);
+            sockaddr_in local_addr;
+            local_addr.sin_family = AF_INET;
+            local_addr.sin_addr.s_addr = 0;
+            local_addr.sin_port = htons(PORT);
 
-        int v = socket(AF_INET, SOCK_STREAM, 0);
-        sockaddr_in local_addr;
-        local_addr.sin_family = AF_INET;
-        local_addr.sin_addr.s_addr = 0;
-        local_addr.sin_port = htons(PORT);
+            usleep(20);
+            connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
+            usleep(30);
 
-        usleep(20);
-        connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
-        usleep(30);
+            const string msg = "hello world!";
+            char e[msg.size() + 1];
+            e[msg.size()] = '\0';
+            usleep(20);
+            write(v, msg.c_str(), msg.size());
+            usleep(100);
+            read(v, e, msg.size() + 1);
+            usleep(20);
+            close(v);
+            EXPECT_EQ(msg, string(e));
+        }
+        pthread_kill(f, SIGINT);
+    }
 
-        const string msg = "hello world!";
-        char e[msg.size() + 1];
-        e[msg.size()] = '\0';
-        usleep(20);
-        write(v, msg.c_str(), msg.size());
-        usleep(100);
-        read(v, e, msg.size() + 1);
-        usleep(20);
-        close(v);
-        EXPECT_EQ(msg, string(e));
+    TEST(GET_ADDR_INFO, CONTRACT) {
+        processor p;
+        addr_info_server s(&p, PORT);
+    }
 
+    TEST(GET_ADDR_INFO, CONNECT) {
+        pthread_t f;
+        pthread_create(&f, NULL, [](void *) -> void * {
+            processor p;
+            addr_info_server s(&p, PORT);
+            started = true;
+            p.execute();
+            started = false;
+        }, NULL);
+        while(!started) {
+            usleep(10);
+        }
+        for(int i = 0; i < 200; ++i) {
+            int v = socket(AF_INET, SOCK_STREAM, 0);
+            sockaddr_in local_addr;
+            local_addr.sin_family = AF_INET;
+            local_addr.sin_addr.s_addr = 0;
+            local_addr.sin_port = htons(PORT);
+
+            usleep(20);
+            connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
+            usleep(30);
+
+            const string msg = "vk.com";
+            const string ans = "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n";
+
+            char e[ans.size() + 1];
+            e[ans.size()] = '\0';
+            usleep(20);
+            write(v, msg.c_str(), msg.size());
+            usleep(100);
+            read(v, e, msg.size() + 1);
+            usleep(20);
+            close(v);
+            EXPECT_EQ(ans, string(e));
+        }
         pthread_kill(f, SIGINT);
     }
 

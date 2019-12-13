@@ -3,6 +3,9 @@ project(server)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(server main.cpp server_utils.cpp server_utils.h uniq_fd.cpp uniq_fd.h socket.cpp socket.h processor.cpp processor.h echo_server.cpp echo_server.h)
+add_executable(server main.cpp server_utils.cpp server_utils.h uniq_fd.cpp uniq_fd.h socket.cpp socket.h processor.cpp processor.h echo_server.cpp echo_server.h addr_info_server.cpp addr_info_server.h)
+
+find_package(Threads)
+target_link_libraries(server ${CMAKE_THREAD_LIBS_INIT})
 
 add_subdirectory(test)
