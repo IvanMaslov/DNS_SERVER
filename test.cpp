@@ -13,6 +13,7 @@
 #include "uniq_fd.h"
 #include "socket.h"
 #include "processor.h"
+#include "echo_server.h"
 
 namespace {
     using namespace std;
@@ -53,6 +54,11 @@ namespace {
     TEST(PROCESSOR, CONTRACT) {
         processor p;
         observed_socket s(uniq_fd(eventfd(0, 0)), &p, [](int a) { return; }, EPOLLIN);
+    }
+
+    TEST(ECHO, CONTRACT) {
+        processor p;
+        echo_server s(&p, 15000);
     }
 
     TEST(SKIP, SKIP1) {

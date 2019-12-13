@@ -16,17 +16,17 @@ using std::set;
 using std::unique_ptr;
 
 class echo_connection;
-class echo_server;
-
 
 class echo_server {
+    friend class echo_connection;
 private:
+    uint16_t port;
     processor* executor;
     observed_socket sock;
     void sock_handle(int);
 
 public:
-    echo_server(processor*);
+    explicit echo_server(processor*, uint16_t);
     ~echo_server();
 
 private:
@@ -43,8 +43,9 @@ private:
     observed_socket sock;
     void sock_handle(int);
 
+    volatile bool alive = true;
 public:
-    echo_connection(echo_server*, uniq_fd const &&);
+    echo_connection(echo_server*, uniq_fd &&);
     ~echo_connection();
 
 private:

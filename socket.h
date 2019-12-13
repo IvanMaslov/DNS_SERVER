@@ -22,6 +22,8 @@ public:
 
     size_t read_c(void*, size_t);
     size_t write_c(const void*, size_t);
+
+    int provide_fd() const noexcept;
 };
 
 // template<> void std::swap<base_socket>(base_socket&, base_socket&) = delete;
