@@ -31,7 +31,7 @@ namespace {
             "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
     };
 
-    const uint16_t PORT = 13000;
+    const uint16_t PORT = 1476;
     bool started = false;
 
     TEST(UTIL_TEST, GET_ADDR_FUNCTIONAL) {
@@ -81,6 +81,7 @@ namespace {
     }
 
     TEST(ECHO, CONNECT) {
+        started = false;
         pthread_t f;
         pthread_create(&f, NULL, [](void *) -> void * {
             processor p;
@@ -92,6 +93,7 @@ namespace {
         while(!started) {
             usleep(10);
         }
+
         for(int i = 0; i < 31; ++i) {
             int v = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in local_addr;
@@ -114,19 +116,23 @@ namespace {
             close(v);
             EXPECT_EQ(msg, string(e));
         }
+
         pthread_kill(f, SIGINT);
+        while(started) {
+            usleep(10);
+        }
     }
 
     TEST(GET_ADDR_INFO, CONTRACT) {
+        const uint16_t PORT2 = 14123;
         processor p;
         addr_info_server s(&p, PORT);
-    }
 
-    TEST(GET_ADDR_INFO, CONNECT) {
+        started = false;
         pthread_t f;
         pthread_create(&f, NULL, [](void *) -> void * {
             processor p;
-            addr_info_server s(&p, PORT);
+            addr_info_server s(&p, PORT2);
             started = true;
             p.execute();
             started = false;
@@ -134,12 +140,35 @@ namespace {
         while(!started) {
             usleep(10);
         }
-        for(int i = 0; i < 200; ++i) {
+
+        pthread_kill(f, SIGINT);
+        while(started) {
+            usleep(10);
+        }
+
+    }
+
+    TEST(GET_ADDR_INFO, CONNECT) {
+        const uint16_t PORT2 = 14124;
+        started = false;
+        pthread_t f;
+        pthread_create(&f, NULL, [](void *) -> void * {
+            processor p;
+            addr_info_server s(&p, PORT2);
+            started = true;
+            p.execute();
+            started = false;
+        }, NULL);
+        while(!started) {
+            usleep(10);
+        }
+
+        for(int i = 0; i < 1; ++i) {
             int v = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in local_addr;
             local_addr.sin_family = AF_INET;
             local_addr.sin_addr.s_addr = 0;
-            local_addr.sin_port = htons(PORT);
+            local_addr.sin_port = htons(PORT2);
 
             usleep(20);
             connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
@@ -158,7 +187,11 @@ namespace {
             close(v);
             EXPECT_EQ(ans, string(e));
         }
+
         pthread_kill(f, SIGINT);
+        while(started) {
+            usleep(10);
+        }
     }
 
 }

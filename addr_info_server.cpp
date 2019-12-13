@@ -10,6 +10,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+//#include <iostream> //DEBUG:
+
+
 void addr_info_connection::sock_handle(int msk) {
     assert(msk & EPOLLIN);
     if (!alive)
@@ -17,8 +20,8 @@ void addr_info_connection::sock_handle(int msk) {
     string arg;
 
     reload:
-    while(pos < len) {
-        if(buffer[pos] == '\n' || buffer[pos] == '\0') {
+    while (pos < len) {
+        if (buffer[pos] == '\n' || buffer[pos] == '\0') {
             ++pos;
 
             if (arg.empty()) {
@@ -35,7 +38,7 @@ void addr_info_connection::sock_handle(int msk) {
         arg.push_back(buffer[pos++]);
     }
 
-    if(pos == len && len != 0){
+    if (pos == len && len != 0) {
         len = sock.read_c(buffer, BUFSIZE);
         pos = 0;
         goto reload;
@@ -83,7 +86,8 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
 
     new_value.it_value.tv_sec = now.tv_sec;
     new_value.it_value.tv_nsec = now.tv_nsec;
-    new_value.it_interval.tv_nsec = 100000;
+    new_value.it_interval.tv_nsec = 10000; /// 10 microseconds
+    //new_value.it_interval.tv_sec = 1;
 
     timerfd = timerfd_create(CLOCK_REALTIME, 0);
     if (timerfd == -1)
@@ -93,24 +97,31 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
         throw server_error("timerfd_settime system error");
 
     timer = std::make_unique<observed_socket>(uniq_fd(timerfd), executor, [this](int msk) {
+        std::lock_guard<mutex> lg(work_out);
+        //std::cerr << jobs.size() << ' ' << results.size() << std::endl;
         clean_old_connections(msk);
         response_all(msk);
+        cv.notify_all();
         return;
     }, EPOLLIN);
 
-    for(size_t i = 0; i < WORKERS; ++i)
+    for (size_t i = 0; i < WORKERS; ++i)
         workers[i] = std::make_unique<thread>([this]() -> void {
-            while(WORKS.load()) {
+            while (WORKS.load()) {
                 pair<addr_info_connection *, string> arg;
                 {
                     std::unique_lock<mutex> lg(work_in);
                     cv.wait(lg, [this]() -> bool { return !jobs.empty() || !WORKS.load(); });
-                    if(!WORKS.load())
+                    if (!WORKS.load())
                         return;
                     arg = jobs.front();
                     jobs.pop();
                 }
-                arg.second = get_addr_info(arg.second);
+                try {
+                    arg.second = get_addr_info(arg.second);
+                } catch (const an_error& e) {
+                    arg.second = "Server error: " + e.get_reason();
+                }
                 {
                     std::lock_guard<mutex> lg(work_out);
                     results.insert(arg);
@@ -132,7 +143,6 @@ void addr_info_server::sock_handle(int msk) {
 }
 
 void addr_info_server::clean_old_connections(int) {
-    std::lock_guard<mutex> lg(work_out);
     while (!deleted_connections.empty()) {
         addr_info_connection *t = *deleted_connections.begin();
         connections.erase(t);
@@ -142,10 +152,9 @@ void addr_info_server::clean_old_connections(int) {
 }
 
 void addr_info_server::response_all(int) {
-    std::lock_guard<mutex> lg(work_out);
     while (!results.empty()) {
         addr_info_connection *t = results.begin()->first;
-        if(connections.find(t) == connections.end()){
+        if (connections.find(t) != connections.end()) {
             connections[t]->sock.write_c(results[t].c_str(), results[t].size());
         }
         results.erase(results.begin());
@@ -154,7 +163,10 @@ void addr_info_server::response_all(int) {
 
 addr_info_server::~addr_info_server() {
     WORKS.store(false);
-    cv.notify_all();
-    for(size_t i = 0; i < WORKERS; ++i)
+    {
+        std::lock_guard<mutex> lg(work_in);
+        cv.notify_all();
+    }
+    for (size_t i = 0; i < WORKERS; ++i)
         workers[i]->join();
 }

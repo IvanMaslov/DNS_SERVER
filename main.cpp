@@ -12,7 +12,7 @@ int main() {
         processor p;
         echo_server echo1500(&p, 1500);
         echo_server echo15000(&p, 15000);
-        addr_info_server get_addr_info(&p, 1444);
+        addr_info_server get_addr_info(&p, 1200);
         p.execute();
         std::cerr << "gracefully stop" << std::endl;
     } catch (const an_error& e) {

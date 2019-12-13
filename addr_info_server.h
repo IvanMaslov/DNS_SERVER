@@ -46,13 +46,12 @@ private:
     map<addr_info_connection*, unique_ptr<addr_info_connection>> connections;
     set<addr_info_connection*> deleted_connections;
     void add_connection(int);
-    void clean_old_connections(int);
-    void response_all(int);
+    void clean_old_connections(int); /// use lock under timer
+    void response_all(int); /// use lock under timer
 
 private:
     static inline const size_t WORKERS = 3;
     static inline volatile std::atomic_bool WORKS = true;
-
 
     queue<pair<addr_info_connection*, string>> jobs;
     map<addr_info_connection*, string> results;
