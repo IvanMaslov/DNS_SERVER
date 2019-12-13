@@ -10,16 +10,18 @@
 
 
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 
 class observed_socket;
+class processor;
 
 class processor {
     friend class observed_socket;
 private:
     const uniq_fd polling_fd;
 
-    void add(observed_socket const&&, int);
-    void remove(observed_socket const&&, int);
+    void add(observed_socket*);
+    void remove(observed_socket*);
 
     static const size_t EPOLL_PER_TIME = 1;
     static const size_t EPOLL_TIMEOUT = 10;
@@ -31,10 +33,14 @@ public:
 };
 
 class observed_socket : public base_socket {
+    friend class processor;
 private:
     processor* parent;
+    std::function<void(int)> callback;
+    uint32_t epoll_mask;
 public:
-    observed_socket(processor*, callback_t);
+    observed_socket(uniq_fd &&, processor*, std::function<void(int)>, uint32_t);
+    virtual ~observed_socket();
 };
 
 

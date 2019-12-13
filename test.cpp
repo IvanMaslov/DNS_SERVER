@@ -12,6 +12,7 @@
 #include "server_utils.h"
 #include "uniq_fd.h"
 #include "socket.h"
+#include "processor.h"
 
 namespace {
     using namespace std;
@@ -43,8 +44,15 @@ namespace {
     }
 
     TEST(SOCKET, CONTRACT) {
-        base_socket some(uniq_fd(socket(0, 0, 0)));
-        some.invoke(0);
+        base_socket t;
+        base_socket c(uniq_fd(socket(0, 0, 0)));
+        base_socket d(uniq_fd(socket(AF_INET, SOCK_STREAM, 0)));
+        base_socket e((base_socket(uniq_fd())));
+    }
+
+    TEST(PROCESSOR, CONTRACT) {
+        processor p;
+        observed_socket s(uniq_fd(eventfd(0, 0)), &p, [](int a) { return; }, EPOLLIN);
     }
 
     TEST(SKIP, SKIP1) {

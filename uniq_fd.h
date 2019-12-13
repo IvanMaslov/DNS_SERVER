@@ -8,11 +8,11 @@
 #include <algorithm>
 
 struct uniq_fd {
-    const int fd = -1;
+    int fd = -1;
 
     uniq_fd();
     explicit uniq_fd(int);
-    uniq_fd(uniq_fd const&&) noexcept;
+    uniq_fd(uniq_fd &&) noexcept;
 
     ~uniq_fd();
 
