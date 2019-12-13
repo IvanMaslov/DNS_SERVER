@@ -53,7 +53,14 @@ namespace {
 
     TEST(PROCESSOR, CONTRACT) {
         processor p;
-        observed_socket s(uniq_fd(eventfd(0, 0)), &p, [](int a) { return; }, EPOLLIN);
+        int q = 12;
+        observed_socket s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) { q = a; return; }, EPOLLIN);
+        p.force_invoke(&s1, 15);
+        EXPECT_EQ(q, 15);
+        int* e = new int(13);
+        observed_socket s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) { *e = a; return; }, EPOLLIN);
+        p.force_invoke(&s2, 16);
+        EXPECT_EQ(*e, 16);
     }
 
     TEST(ECHO, CONTRACT) {

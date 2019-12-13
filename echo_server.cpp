@@ -30,7 +30,6 @@ echo_server::echo_server(processor *executor, uint16_t port)
           port(port),
           sock(uniq_fd(socket(AF_INET, SOCK_STREAM, 0)), executor,
                [this](int sig) { this->sock_handle(sig); }, EPOLLIN) {
-    //TODO: address bind listen
     int fd = sock.provide_fd();
     if (fd < 0) {
         throw server_error("socket create");

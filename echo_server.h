@@ -38,6 +38,7 @@ private:
 };
 
 class echo_connection {
+    friend class echo_server;
 private:
     echo_server* owner;
     observed_socket sock;
@@ -49,7 +50,7 @@ public:
     ~echo_connection();
 
 private:
-    inline static const size_t BUFSIZE = 1024;
+    inline static const size_t BUFSIZE = 32;
 
     char buffer[BUFSIZE];
     size_t pos = 0;

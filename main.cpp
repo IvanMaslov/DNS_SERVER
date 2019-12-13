@@ -10,5 +10,6 @@ int main() {
     processor p;
     echo_server s(&p, 1500);
     p.execute();
+    std::cerr << "gracefully stop" << std::endl;
     return 0;
 }
