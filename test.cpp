@@ -31,6 +31,7 @@ namespace {
     };
 
     const uint16_t PORT = 14000;
+    bool started = false;
 
     TEST(UTIL_TEST, GET_ADDR_FUNCTIONAL) {
         for (size_t i = 0; i < domain.size(); ++i)
@@ -54,47 +55,65 @@ namespace {
     TEST(PROCESSOR, CONTRACT) {
         processor p;
         int q = 12;
-        observed_socket s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) { q = a; return; }, EPOLLIN);
+        observed_socket s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) {
+            q = a;
+            return;
+        }, EPOLLIN);
         p.force_invoke(&s1, 15);
         EXPECT_EQ(q, 15);
-        int* e = new int(13);
-        observed_socket s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) { *e = a; return; }, EPOLLIN);
+        int *e = new int(13);
+        observed_socket s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) {
+            *e = a;
+            return;
+        }, EPOLLIN);
         p.force_invoke(&s2, 16);
         EXPECT_EQ(*e, 16);
+
+        //CHECK: sanitizer
+        delete e;
     }
 
     TEST(ECHO, CONTRACT) {
         processor p;
         echo_server s(&p, 15000);
+        echo_server t(&p, 15001);
     }
 
-    TEST(SKIP, SKIP1) {
-        GTEST_SKIP();
-        int u = socket(AF_INET, SOCK_STREAM, 0);
-        int v = socket(AF_INET, SOCK_STREAM, 0);
-        base_socket s((uniq_fd(u)));
-        base_socket t((uniq_fd(v)));
+    TEST(ECHO, CONNECT_ONCE) {
+        pthread_t f;
+        pthread_create(&f, NULL, [](void *) -> void * {
+            processor p;
+            echo_server s(&p, PORT);
+            started = true;
+            p.execute();
+            started = false;
+        }, NULL);
+        while(!started) {
+            usleep(10);
+        }
 
+        int v = socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in local_addr;
         local_addr.sin_family = AF_INET;
         local_addr.sin_addr.s_addr = 0;
         local_addr.sin_port = htons(PORT);
 
-        bind(u, reinterpret_cast<sockaddr const *>(&local_addr), sizeof(local_addr));
-        listen(u, SOMAXCONN);
-
-        local_addr.sin_family = AF_INET;
-        local_addr.sin_addr.s_addr = 0;
-        local_addr.sin_port = htons(PORT);
-
-        connect(v, (struct sockaddr *)&local_addr, sizeof(local_addr));
+        usleep(20);
+        connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
+        usleep(30);
 
         const string msg = "hello world!";
-        char e[msg.size()];
-        t.write_c(msg.c_str(), msg.size());
-
-        s.read_c(e, msg.size());
+        char e[msg.size() + 1];
+        e[msg.size()] = '\0';
+        usleep(20);
+        write(v, msg.c_str(), msg.size());
+        usleep(100);
+        read(v, e, msg.size() + 1);
+        usleep(20);
+        close(v);
         EXPECT_EQ(msg, string(e));
+
+        pthread_kill(f, SIGINT);
     }
 
 }

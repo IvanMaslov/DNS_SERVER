@@ -25,6 +25,7 @@ private:
     observed_socket sock;
     void sock_handle(int);
 
+    unique_ptr<observed_socket> timer;
 public:
     explicit echo_server(processor*, uint16_t);
     ~echo_server();
@@ -44,7 +45,9 @@ private:
     observed_socket sock;
     void sock_handle(int);
 
+    const time_t stamp;
     volatile bool alive = true;
+    void disconnect();
 public:
     echo_connection(echo_server*, uniq_fd &&);
     ~echo_connection();
