@@ -4,12 +4,12 @@ import socket
 import random
 import time
 
-TEST_COUNT = 500
+TEST_COUNT = 20000
 VERBOSITY = 1
 FAIL_RESULT = "Server Internal Error\n"
 
 # VERBOSITY >= 1
-VERBOSITY_TEST_SCALE = 50
+VERBOSITY_TEST_SCALE = 1000
 
 
 data = [
@@ -44,7 +44,7 @@ def test_short():
             if(received == FAIL_RESULT):
                 failed += 1
             else:
-                print ("Error:  expected != received")
+                print ("Error SHORT:  expected != received")
                 return
 
     print ("SUCCESS SHORT:    {} passed in {} seconds with {} errors".format(TEST_COUNT, (time.time() - start_time), failed))
@@ -75,7 +75,7 @@ def test_long():
                 if(received == FAIL_RESULT):
                     failed += 1
                 else:
-                    print ("Error:  expected != received")
+                    print ("Error LONG:  expected != received")
                     return
 
 
@@ -85,7 +85,7 @@ def test_long():
     print ("SUCCESS LONG:    {} passed in {} seconds with {} errors".format(TEST_COUNT, (time.time() - start_time), failed))
     return
 
-
+test_short()
 test_long()
 test_short()
 test_long()

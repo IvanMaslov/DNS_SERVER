@@ -44,6 +44,8 @@ void addr_info_connection::sock_handle(int msk) {
         pos = 0;
         goto reload;
     }
+
+    disconnect();
 }
 
 addr_info_connection::addr_info_connection(addr_info_server *owner, uniq_fd &&fd)
