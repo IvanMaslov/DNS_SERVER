@@ -87,7 +87,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
     new_value.it_value.tv_sec = now.tv_sec;
     new_value.it_value.tv_nsec = now.tv_nsec;
     new_value.it_interval.tv_nsec = 10000; /// 10 microseconds
-    //new_value.it_interval.tv_sec = 1;
+    //new_value.it_interval.tv_sec = 1; //DEBUG:
 
     timerfd = timerfd_create(CLOCK_REALTIME, 0);
     if (timerfd == -1)
@@ -98,7 +98,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
 
     timer = std::make_unique<observed_socket>(uniq_fd(timerfd), executor, [this](int msk) {
         std::lock_guard<mutex> lg(work_out);
-        //std::cerr << jobs.size() << ' ' << results.size() << std::endl;
+        //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:
         clean_old_connections(msk);
         response_all(msk);
         cv.notify_all();
@@ -124,7 +124,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
                 }
                 {
                     std::lock_guard<mutex> lg(work_out);
-                    results.insert(arg);
+                    results.push(arg);
                 }
             }
         });
@@ -146,18 +146,17 @@ void addr_info_server::clean_old_connections(int) {
     while (!deleted_connections.empty()) {
         addr_info_connection *t = *deleted_connections.begin();
         connections.erase(t);
-        results.erase(t);
         deleted_connections.erase(deleted_connections.begin());
     }
 }
 
 void addr_info_server::response_all(int) {
     while (!results.empty()) {
-        addr_info_connection *t = results.begin()->first;
+        addr_info_connection *t = results.front().first;
         if (connections.find(t) != connections.end()) {
-            connections[t]->sock.write_c(results[t].c_str(), results[t].size());
+            connections[t]->sock.write_c(results.front().second.c_str(), results.front().second.size());
         }
-        results.erase(results.begin());
+        results.pop();
     }
 }
 

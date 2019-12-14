@@ -54,7 +54,7 @@ private:
     static inline volatile std::atomic_bool WORKS = true;
 
     queue<pair<addr_info_connection*, string>> jobs;
-    map<addr_info_connection*, string> results;
+    queue<pair<addr_info_connection*, string>> results;
     unique_ptr<thread> workers[WORKERS];
     mutex work_in, work_out;
     condition_variable cv;

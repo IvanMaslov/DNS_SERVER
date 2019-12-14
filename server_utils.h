@@ -10,6 +10,7 @@
 using std::string;
 using std::exception;
 
+string get_addr_info_name(const string&);
 string get_addr_info(const string&);
 
 class an_error : exception {
