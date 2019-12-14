@@ -121,7 +121,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
                 try {
                     arg.second = get_addr_info(arg.second);
                 } catch (const an_error& e) {
-                    arg.second = "Server error: " + e.get_reason();
+                    arg.second = "Server Internal Error\n";
                 }
                 {
                     std::lock_guard<mutex> lg(work_out);
