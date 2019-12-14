@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <csignal>
 
-//#include <iostream> //DEBUG:
+//#include <iostream> //DEBUG:cerr
 
 
 void addr_info_connection::sock_handle(int msk) {
@@ -88,7 +88,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
     new_value.it_value.tv_sec = now.tv_sec;
     new_value.it_value.tv_nsec = now.tv_nsec;
     new_value.it_interval.tv_nsec = 10000; /// 10 microseconds
-    //new_value.it_interval.tv_sec = 1; //DEBUG:
+    //new_value.it_interval.tv_sec = 1; //DEBUG:cerr
 
     timerfd = timerfd_create(CLOCK_REALTIME, 0);
     if (timerfd == -1)
@@ -99,7 +99,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
 
     timer = std::make_unique<observed_socket>(uniq_fd(timerfd), executor, [this](int msk) {
         std::lock_guard<mutex> lg(work_out);
-        //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:
+        //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:cerr
         clean_old_connections(msk);
         response_all(msk);
         cv.notify_all();
@@ -144,6 +144,7 @@ void addr_info_server::sock_handle(int msk) {
 }
 
 void addr_info_server::clean_old_connections(int) {
+    //if(deleted_connections.size()) std::cerr << "clear: " << deleted_connections.size() << std::endl; //DEBUG:cerr
     while (!deleted_connections.empty()) {
         addr_info_connection *t = *deleted_connections.begin();
         connections.erase(t);
