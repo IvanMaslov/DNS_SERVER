@@ -19,25 +19,42 @@
 namespace {
     using namespace std;
 
-    const vector<string> domain = {
+    const vector<string> domain_2 = {
             "neerc.info.ru",
             "ipc.susu.ru",
             "vk.com",
     };
 
-    const vector<string> result = {
+    const vector<string> result_2 = {
             "expirepages-kiae-1.nic.ru\nexpirepages-kiae-2.nic.ru\n",
             "ipc.susu.ru\n",
             "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
     };
 
+
+    const vector<string> domain = {
+            "192.168.1.1",
+            "vk.com",
+    };
+
+    const vector<string> result = {
+            "192.168.1.1\n\n",
+            "87.240.137.158\n87.240.139.194\n87.240.190.67\n87.240.190.72\n87.240.190.78\n93.186.225.208\n\n",
+    };
+
     const uint16_t PORT = 1476;
     bool started = false;
+
+    TEST(UTIL_TEST, GET_ADDR_NAME_FUNCTIONAL) {
+        for (size_t i = 0; i < domain_2.size(); ++i)
+            EXPECT_EQ(get_addr_info_name(domain_2[i]), result_2[i]);
+    }
 
     TEST(UTIL_TEST, GET_ADDR_FUNCTIONAL) {
         for (size_t i = 0; i < domain.size(); ++i)
             EXPECT_EQ(get_addr_info(domain[i]), result[i]);
     }
+
 
     TEST(UNIQ_FD, CONTRACT) {
         uniq_fd t;
@@ -163,7 +180,7 @@ namespace {
             usleep(10);
         }
 
-        for(int i = 0; i < 1; ++i) {
+        for(int i = 0; i < 31; ++i) {
             int v = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in local_addr;
             local_addr.sin_family = AF_INET;
@@ -174,15 +191,17 @@ namespace {
             connect(v, (struct sockaddr *) &local_addr, sizeof(local_addr));
             usleep(30);
 
-            const string msg = "vk.com";
-            const string ans = "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n";
-
+            const string msg = "192.168.1.1";
+            const string ans = "192.168.1.1\n\n";
             char e[ans.size() + 1];
             e[ans.size()] = '\0';
             usleep(20);
+            std::cerr << "write: " << msg << endl;
             write(v, msg.c_str(), msg.size());
             usleep(100);
-            read(v, e, msg.size() + 1);
+            std::cerr << "read (expect): " << msg << endl;
+            read(v, e, ans.size() + 1);
+            std::cerr << "read (got): " << string(e) << endl;
             usleep(20);
             close(v);
             EXPECT_EQ(ans, string(e));

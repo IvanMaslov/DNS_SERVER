@@ -9,6 +9,7 @@
 #include <sys/timerfd.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <csignal>
 
 //#include <iostream> //DEBUG:
 
@@ -164,6 +165,8 @@ addr_info_server::~addr_info_server() {
     WORKS.store(false);
     {
         std::lock_guard<mutex> lg(work_in);
+        for (size_t i = 0; i < WORKERS; ++i)
+            kill(workers[i]->native_handle(), SIGTERM);
         cv.notify_all();
     }
     for (size_t i = 0; i < WORKERS; ++i)

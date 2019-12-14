@@ -50,6 +50,7 @@ processor::processor() : polling_fd(epoll_create(0xCAFE)) {
 }
 
 void processor::execute() {
+    executing = true;
     epoll_event pevents[EPOLL_PER_TIME];
     while (executing) {
         int ready = epoll_wait(polling_fd.fd, pevents, EPOLL_PER_TIME, EPOLL_TIMEOUT);
