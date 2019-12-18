@@ -5,7 +5,7 @@
 #ifndef SERVER_PROCESSOR_H
 #define SERVER_PROCESSOR_H
 
-#include "socket.h"
+#include "uniq_fd.h"
 #include "server_utils.h"
 
 
@@ -14,20 +14,20 @@
 
 #include <memory>
 
-class observed_socket;
+class observed_fd;
 class processor;
 
 using std::unique_ptr;
 
 class processor {
-    friend class observed_socket;
+    friend class observed_fd;
 private:
     const uniq_fd polling_fd;
 
-    void add(observed_socket*);
-    void remove(observed_socket*);
+    void add(observed_fd*);
+    void remove(observed_fd*);
 
-    unique_ptr<observed_socket> breaker;
+    unique_ptr<observed_fd> breaker;
 
     static const size_t EPOLL_PER_TIME = 1;
     static const size_t EPOLL_TIMEOUT = 10;
@@ -38,18 +38,18 @@ public:
     void execute();
 
     //DEBUG: force_invoke
-    void force_invoke(observed_socket* t, int arg);
+    void force_invoke(observed_fd* t, int arg);
 };
 
-class observed_socket : public base_socket {
+class observed_fd : public uniq_fd {
     friend class processor;
 private:
     processor* parent;
     std::function<void(int)> callback;
     uint32_t epoll_mask;
 public:
-    observed_socket(uniq_fd &&, processor*, std::function<void(int)>, uint32_t);
-    virtual ~observed_socket();
+    observed_fd(uniq_fd &&, processor*, std::function<void(int)>, uint32_t);
+    virtual ~observed_fd();
 };
 
 

@@ -7,5 +7,5 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 # 'Google_Tests_run' is the target name
 # 'test1.cpp tests2.cpp' are source files with tests
-add_executable(Google_Tests_run ../test.cpp ../server_utils.cpp ../uniq_fd.cpp ../uniq_fd.h ../socket.cpp ../socket.h ../processor.cpp ../processor.h ../echo_server.cpp ../echo_server.h ../addr_info_server.cpp ../addr_info_server.h)
+add_executable(Google_Tests_run ../test.cpp ../server_utils.cpp ../uniq_fd.cpp ../uniq_fd.h ../processor.cpp ../processor.h ../echo_server.cpp ../echo_server.h ../addr_info_server.cpp ../addr_info_server.h)
 target_link_libraries(Google_Tests_run -fsanitize=address gtest gtest_main)

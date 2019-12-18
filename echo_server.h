@@ -22,10 +22,10 @@ class echo_server {
 private:
     uint16_t port;
     processor* executor;
-    observed_socket sock;
+    observed_fd sock;
     void sock_handle(int);
 
-    unique_ptr<observed_socket> timer;
+    unique_ptr<observed_fd> timer;
 public:
     explicit echo_server(processor*, uint16_t);
     ~echo_server();
@@ -42,7 +42,7 @@ class echo_connection {
     friend class echo_server;
 private:
     echo_server* owner;
-    observed_socket sock;
+    observed_fd sock;
     void sock_handle(int);
 
     const time_t stamp;

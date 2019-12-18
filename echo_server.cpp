@@ -74,7 +74,7 @@ echo_server::echo_server(processor *executor, uint16_t port)
     if (timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
         throw server_error("timerfd_settime system error");
 
-    timer = std::make_unique<observed_socket>(uniq_fd(timerfd), executor, [this](int msk) {
+    timer = std::make_unique<observed_fd>(uniq_fd(timerfd), executor, [this](int msk) {
         clean_old_connections(msk);
         return;
     }, EPOLLIN);

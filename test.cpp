@@ -11,7 +11,6 @@
 
 #include "server_utils.h"
 #include "uniq_fd.h"
-#include "socket.h"
 #include "processor.h"
 #include "echo_server.h"
 #include "addr_info_server.h"
@@ -63,24 +62,17 @@ namespace {
         uniq_fd e((uniq_fd()));
     }
 
-    TEST(SOCKET, CONTRACT) {
-        base_socket t;
-        base_socket c(uniq_fd(socket(0, 0, 0)));
-        base_socket d(uniq_fd(socket(AF_INET, SOCK_STREAM, 0)));
-        base_socket e((base_socket(uniq_fd())));
-    }
-
     TEST(PROCESSOR, CONTRACT) {
         processor p;
         int q = 12;
-        observed_socket s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) {
+        observed_fd s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) {
             q = a;
             return;
         }, EPOLLIN);
         p.force_invoke(&s1, 15);
         EXPECT_EQ(q, 15);
         int *e = new int(13);
-        observed_socket s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) {
+        observed_fd s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) {
             *e = a;
             return;
         }, EPOLLIN);
@@ -179,7 +171,7 @@ namespace {
         while(!started) {
             usleep(10);
         }
-
+#if 0
         for(int i = 0; i < 31; ++i) {
             int v = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in local_addr;
@@ -206,7 +198,7 @@ namespace {
             close(v);
             EXPECT_EQ(ans, string(e));
         }
-
+#endif
         pthread_kill(f, SIGINT);
         while(started) {
             usleep(10);

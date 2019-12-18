@@ -3,7 +3,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "socket.h"
 #include "echo_server.h"
 #include "addr_info_server.h"
 

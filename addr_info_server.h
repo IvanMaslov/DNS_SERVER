@@ -34,10 +34,10 @@ class addr_info_server {
 private:
     uint16_t port;
     processor* executor;
-    observed_socket sock;
+    observed_fd sock;
     void sock_handle(int);
 
-    unique_ptr<observed_socket> timer;
+    unique_ptr<observed_fd> timer;
 public:
     explicit addr_info_server(processor*, uint16_t);
     ~addr_info_server();
@@ -64,7 +64,7 @@ class addr_info_connection {
     friend class addr_info_server;
 private:
     addr_info_server* owner;
-    observed_socket sock;
+    observed_fd sock;
     void sock_handle(int);
 
     const time_t stamp;

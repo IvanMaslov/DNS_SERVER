@@ -99,7 +99,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
     if (timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
         throw server_error("timerfd_settime system error");
 
-    timer = std::make_unique<observed_socket>(uniq_fd(timerfd), executor, [this](int msk) {
+    timer = std::make_unique<observed_fd>(uniq_fd(timerfd), executor, [this](int msk) {
         std::lock_guard<mutex> lg(work_out);
         //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:cerr
         clean_old_connections(msk);
