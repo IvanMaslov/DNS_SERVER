@@ -35,7 +35,7 @@ private:
     uint16_t port;
     processor* executor;
     observed_fd sock;
-    void sock_handle(int);
+    void sock_handle();
 
     unique_ptr<observed_fd> timer;
 public:
@@ -46,8 +46,8 @@ private:
     map<addr_info_connection*, unique_ptr<addr_info_connection>> connections;
     set<addr_info_connection*> deleted_connections;
     void add_connection(int);
-    void clean_old_connections(int); /// use lock under timer
-    void response_all(int); /// use lock under timer
+    void clean_old_connections(); /// use lock under timer
+    void response_all(); /// use lock under timer
 
 private:
     static inline const size_t WORKERS = 3;
@@ -65,15 +65,15 @@ class addr_info_connection {
 private:
     addr_info_server* owner;
     observed_fd sock;
-    void sock_handle(int);
+    void sock_handle();
 
     const time_t stamp;
     volatile bool alive = true;
     void disconnect();
+
 public:
     addr_info_connection(addr_info_server*, uniq_fd &&);
     ~addr_info_connection();
-
 private:
     inline static const size_t BUFSIZE = 32;
 

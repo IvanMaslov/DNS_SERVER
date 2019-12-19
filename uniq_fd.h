@@ -11,6 +11,7 @@
 using std::function;
 
 struct uniq_fd {
+    //FIXME:private
     int fd = -1;
 
     uniq_fd();
@@ -25,9 +26,6 @@ struct uniq_fd {
 
     size_t read_c(void*, size_t);
     size_t write_c(const void*, size_t);
-
-    //FIXME:
-    int provide_fd() { return fd; }
 };
 
 // template<> void std::swap<uniq_fd>(uniq_fd&, uniq_fd&) = delete;

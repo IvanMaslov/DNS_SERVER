@@ -54,6 +54,12 @@ namespace {
             EXPECT_EQ(get_addr_info(domain[i]), result[i]);
     }
 
+    TEST(UTIL_TEST, FABRICS) {
+        fd_fabric::socket_fd(1234);
+        fd_fabric::epoll_fd();
+        fd_fabric::signal_fd();
+        fd_fabric::timer_fd();
+    }
 
     TEST(UNIQ_FD, CONTRACT) {
         uniq_fd t;
@@ -65,18 +71,18 @@ namespace {
     TEST(PROCESSOR, CONTRACT) {
         processor p;
         int q = 12;
-        observed_fd s1(uniq_fd(eventfd(0, 0)), &p, [&q](int a) {
-            q = a;
+        observed_fd s1(uniq_fd(eventfd(0, 0)), &p, [&q]() {
+            q = 15;
             return;
         }, EPOLLIN);
-        p.force_invoke(&s1, 15);
+        p.force_invoke(&s1);
         EXPECT_EQ(q, 15);
         int *e = new int(13);
-        observed_fd s2(uniq_fd(eventfd(0, 0)), &p, [e](int a) {
-            *e = a;
+        observed_fd s2(uniq_fd(eventfd(0, 0)), &p, [e]() {
+            *e = 16;
             return;
         }, EPOLLIN);
-        p.force_invoke(&s2, 16);
+        p.force_invoke(&s2);
         EXPECT_EQ(*e, 16);
 
         //CHECK: sanitizer

@@ -13,9 +13,11 @@
 
 //#include <iostream> //DEBUG:cerr
 
+#include <functional>
 
-void addr_info_connection::sock_handle(int msk) {
-    assert(msk & EPOLLIN);
+using std::bind;
+
+void addr_info_connection::sock_handle() {
     if (!alive)
         throw server_error("invoke dead connection");
     string arg;
@@ -51,7 +53,7 @@ void addr_info_connection::sock_handle(int msk) {
 addr_info_connection::addr_info_connection(addr_info_server *owner, uniq_fd &&fd)
         : owner(owner),
           stamp(time(NULL)),
-          sock(std::move(fd), owner->executor, [this](int sig) { this->sock_handle(sig); }, EPOLLIN) {}
+          sock(std::move(fd), owner->executor, [this](void) { this->sock_handle(); }, EPOLLIN) {}
 
 void addr_info_connection::disconnect() {
     alive = false;
@@ -65,45 +67,14 @@ addr_info_connection::~addr_info_connection() {
 addr_info_server::addr_info_server(processor *executor, uint16_t port)
         : executor(executor),
           port(port),
-          sock(uniq_fd(socket(AF_INET, SOCK_STREAM, 0)), executor,
-               [this](int sig) { this->sock_handle(sig); }, EPOLLIN) {
-    int fd = sock.provide_fd();
-    if (fd < 0) {
-        throw server_error("socket create");
-    }
-    sockaddr_in local_addr;
-    local_addr.sin_family = AF_INET;
-    local_addr.sin_addr.s_addr = 0;
-    local_addr.sin_port = htons(port);
-    bind(fd, reinterpret_cast<sockaddr const *>(&local_addr), sizeof(local_addr));
-    listen(fd, SOMAXCONN);
+          sock(uniq_fd(bind(&fd_fabric::socket_fd, port)), executor,
+               [this]() { this->sock_handle(); }, EPOLLIN) {
 
-    struct itimerspec new_value{};
-    int max_exp, timerfd;
-    struct timespec now{};
-    uint64_t exp, tot_exp;
-    ssize_t s;
-
-    if (clock_gettime(CLOCK_REALTIME, &now) == -1)
-        throw server_error("clock_gettime system error");
-
-    new_value.it_value.tv_sec = now.tv_sec;
-    new_value.it_value.tv_nsec = now.tv_nsec;
-    new_value.it_interval.tv_nsec = 10000; /// 10 microseconds
-    //new_value.it_interval.tv_sec = 1; //DEBUG:cerr
-
-    timerfd = timerfd_create(CLOCK_REALTIME, 0);
-    if (timerfd == -1)
-        throw server_error("timerfd_create system error");
-
-    if (timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
-        throw server_error("timerfd_settime system error");
-
-    timer = std::make_unique<observed_fd>(uniq_fd(timerfd), executor, [this](int msk) {
+    timer = std::make_unique<observed_fd>(uniq_fd(fd_fabric::timer_fd()), executor, [this]() {
         std::lock_guard<mutex> lg(work_out);
         //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:cerr
-        clean_old_connections(msk);
-        response_all(msk);
+        clean_old_connections();
+        response_all();
         cv.notify_all();
         return;
     }, EPOLLIN);
@@ -138,14 +109,13 @@ void addr_info_server::add_connection(int fd) {
     connections.insert(std::make_pair(connect.get(), std::move(connect)));
 }
 
-void addr_info_server::sock_handle(int msk) {
-    assert(msk & EPOLLIN);
-    int fd = sock.provide_fd();
+void addr_info_server::sock_handle() {
+    int fd = sock.fd;
     int conn_fd = accept(fd, nullptr, nullptr);
     add_connection(conn_fd);
 }
 
-void addr_info_server::clean_old_connections(int) {
+void addr_info_server::clean_old_connections() {
     //if(deleted_connections.size()) std::cerr << "clear: " << deleted_connections.size() << std::endl; //DEBUG:cerr
     while (!deleted_connections.empty()) {
         addr_info_connection *t = *deleted_connections.begin();
@@ -154,7 +124,7 @@ void addr_info_server::clean_old_connections(int) {
     }
 }
 
-void addr_info_server::response_all(int) {
+void addr_info_server::response_all() {
     while (!results.empty()) {
         addr_info_connection *t = results.front().first;
         if (connections.find(t) != connections.end()) {

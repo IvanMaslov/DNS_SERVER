@@ -15,17 +15,21 @@
 #include <memory>
 
 class observed_fd;
+
 class processor;
 
 using std::unique_ptr;
+using std::move;
 
 class processor {
     friend class observed_fd;
+
 private:
     const uniq_fd polling_fd;
 
-    void add(observed_fd*);
-    void remove(observed_fd*);
+    void add(observed_fd *, uint32_t);
+
+    void remove(observed_fd *);
 
     unique_ptr<observed_fd> breaker;
 
@@ -34,24 +38,26 @@ private:
     inline static volatile bool executing = true;
 public:
     processor();
+
     ~processor();
+
     void execute();
 
     //DEBUG: force_invoke
-    void force_invoke(observed_fd* t, int arg);
+    void force_invoke(observed_fd *t);
 };
 
 class observed_fd : public uniq_fd {
     friend class processor;
+
 private:
-    processor* parent;
-    std::function<void(int)> callback;
-    uint32_t epoll_mask;
+    processor *parent;
+    std::function<void(void)> callback;
 public:
-    observed_fd(uniq_fd &&, processor*, std::function<void(int)>, uint32_t);
+    observed_fd(uniq_fd &&, processor *, std::function<void(void)> callback, uint32_t msk = EPOLLIN);
+
     virtual ~observed_fd();
 };
-
 
 
 #endif //SERVER_PROCESSOR_H

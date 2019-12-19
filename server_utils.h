@@ -45,4 +45,14 @@ public:
 
 
 
+namespace fd_fabric {
+    int timer_fd();
+
+    int socket_fd(uint16_t port);
+
+    int epoll_fd();
+
+    int signal_fd();
+}
+
 #endif //SERVER_SERVER_UTILS_H

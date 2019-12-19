@@ -23,7 +23,7 @@ private:
     uint16_t port;
     processor* executor;
     observed_fd sock;
-    void sock_handle(int);
+    void sock_handle();
 
     unique_ptr<observed_fd> timer;
 public:
@@ -34,7 +34,7 @@ private:
     map<echo_connection*, unique_ptr<echo_connection>> connections;
     set<echo_connection*> deleted_connections;
     void add_connection(int);
-    void clean_old_connections(int);
+    void clean_old_connections();
 
 };
 
@@ -43,7 +43,7 @@ class echo_connection {
 private:
     echo_server* owner;
     observed_fd sock;
-    void sock_handle(int);
+    void sock_handle();
 
     const time_t stamp;
     volatile bool alive = true;

@@ -14,28 +14,11 @@
 #include <stdio.h>
 
 
-processor::processor() : polling_fd(epoll_create(0xCAFE)) {
-    if (polling_fd.fd < 0) {
-        throw exec_error("creating processor");
-    }
+processor::processor() : polling_fd(fd_fabric::epoll_fd()) {
 
-    sigset_t mask;
-    int sfd;
-
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGINT);
-    sigaddset(&mask, SIGQUIT);
-
-    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
-        throw exec_error("breaker 1");
-
-    sfd = signalfd(-1, &mask, 0);
-    if (sfd == -1)
-        throw exec_error("breaker 2");
-
-    breaker = std::make_unique<observed_fd>(uniq_fd(sfd), this, [this, sfd](int msk) {
+    breaker = std::make_unique<observed_fd>(uniq_fd(fd_fabric::signal_fd()), this, [this]() {
         struct signalfd_siginfo fdsi{};
-        ssize_t s = read(sfd, &fdsi, sizeof(struct signalfd_siginfo));
+        ssize_t s = this->breaker->read_c(&fdsi, sizeof(struct signalfd_siginfo));
         if (s != sizeof(struct signalfd_siginfo))
             return;
         if (fdsi.ssi_signo == SIGINT) {
@@ -60,7 +43,7 @@ void processor::execute() {
             return;
         } else {
             for (int i = 0; i < ready; i++) {
-                reinterpret_cast<observed_fd *> (pevents[i].data.ptr)->callback(pevents[i].events);
+                reinterpret_cast<observed_fd *> (pevents[i].data.ptr)->callback();
             }
         }
     }
@@ -68,9 +51,9 @@ void processor::execute() {
 
 processor::~processor() = default;
 
-void processor::add(observed_fd *sock) {
+void processor::add(observed_fd *sock, uint32_t msk) {
     epoll_event ev{};
-    ev.events = sock->epoll_mask;
+    ev.events = msk;
     ev.data.fd = sock->fd;
     ev.data.ptr = reinterpret_cast<void *>(sock);
     if (epoll_ctl(polling_fd.fd, EPOLL_CTL_ADD, sock->fd, &ev) != 0)
@@ -85,13 +68,13 @@ void processor::remove(observed_fd *sock) {
 }
 
 //DEBUG: force_invoke
-void processor::force_invoke(observed_fd *t, int arg) {
-    t->callback(arg);
+void processor::force_invoke(observed_fd *t) {
+    t->callback();
 }
 
-observed_fd::observed_fd(uniq_fd &&fd, processor *proc, std::function<void(int)> callback, uint32_t msk)
-        : uniq_fd(std::move(fd)), parent(proc), callback(std::move(callback)), epoll_mask(msk) {
-    parent->add(this);
+observed_fd::observed_fd(uniq_fd &&fd, processor *proc, std::function<void(void)> callback, uint32_t msk)
+        : uniq_fd(std::move(fd)), parent(proc), callback(std::move(callback)){
+    parent->add(this, msk);
 }
 
 observed_fd::~observed_fd() {

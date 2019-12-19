@@ -9,8 +9,7 @@
 #include <sys/timerfd.h>
 #include <netinet/in.h>
 
-void echo_connection::sock_handle(int msk) {
-    assert(msk & EPOLLIN);
+void echo_connection::sock_handle() {
     if (!alive)
         throw server_error("invoke dead connection");
     size_t readed = 0;
@@ -27,7 +26,7 @@ void echo_connection::sock_handle(int msk) {
 echo_connection::echo_connection(echo_server *owner, uniq_fd &&fd)
         : owner(owner),
           stamp(time(NULL)),
-          sock(std::move(fd), owner->executor, [this](int sig) { this->sock_handle(sig); }, EPOLLIN) {}
+          sock(std::move(fd), owner->executor, [this]() { this->sock_handle(); }, EPOLLIN) {}
 
 void echo_connection::disconnect() {
     alive = false;
@@ -42,8 +41,8 @@ echo_server::echo_server(processor *executor, uint16_t port)
         : executor(executor),
           port(port),
           sock(uniq_fd(socket(AF_INET, SOCK_STREAM, 0)), executor,
-               [this](int sig) { this->sock_handle(sig); }, EPOLLIN) {
-    int fd = sock.provide_fd();
+               [this]() { this->sock_handle(); }, EPOLLIN) {
+    int fd = sock.fd;
     if (fd < 0) {
         throw server_error("socket create");
     }
@@ -74,8 +73,8 @@ echo_server::echo_server(processor *executor, uint16_t port)
     if (timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
         throw server_error("timerfd_settime system error");
 
-    timer = std::make_unique<observed_fd>(uniq_fd(timerfd), executor, [this](int msk) {
-        clean_old_connections(msk);
+    timer = std::make_unique<observed_fd>(uniq_fd(timerfd), executor, [this]() {
+        clean_old_connections();
         return;
     }, EPOLLIN);
 }
@@ -85,14 +84,13 @@ void echo_server::add_connection(int fd) {
     connections.insert(std::make_pair(connect.get(), std::move(connect)));
 }
 
-void echo_server::sock_handle(int msk) {
-    assert(msk & EPOLLIN);
-    int fd = sock.provide_fd();
+void echo_server::sock_handle() {
+    int fd = sock.fd;
     int conn_fd = accept(fd, nullptr, nullptr);
     add_connection(conn_fd);
 }
 
-void echo_server::clean_old_connections(int) {
+void echo_server::clean_old_connections() {
     while (!deleted_connections.empty()) {
         echo_connection *t = *deleted_connections.begin();
         connections.erase(t);
