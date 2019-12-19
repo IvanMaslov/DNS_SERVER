@@ -34,11 +34,13 @@ namespace {
     const vector<string> domain = {
             "192.168.1.1",
             "vk.com",
+            "ya.ru",
     };
 
     const vector<string> result = {
             "192.168.1.1\n\n",
             "87.240.137.158\n87.240.139.194\n87.240.190.67\n87.240.190.72\n87.240.190.78\n93.186.225.208\n\n",
+            "0.0.0.0\n87.250.250.242\n\n",
     };
 
     const uint16_t PORT = 1476;
@@ -56,6 +58,18 @@ namespace {
 
     TEST(UTIL_TEST, FABRICS) {
         fd_fabric::socket_fd(1234);
+        fd_fabric::epoll_fd();
+        fd_fabric::signal_fd();
+        fd_fabric::timer_fd();
+        try {
+            fd_fabric::socket_fd(1234);
+            FAIL() << "MULTI-SOCKET: created";
+        } catch (const fd_fabric::fd_error &e) {
+            EXPECT_EQ(e.get_reason(), "socket bind");
+            EXPECT_EQ(e.type, fd_fabric::fd_error::SOCKET_FD);
+        } catch (...) {
+            FAIL() << "MULTI-SOCKET: unexpected exception";
+        }
         fd_fabric::epoll_fd();
         fd_fabric::signal_fd();
         fd_fabric::timer_fd();
@@ -105,11 +119,11 @@ namespace {
             p.execute();
             started = false;
         }, NULL);
-        while(!started) {
+        while (!started) {
             usleep(10);
         }
 
-        for(int i = 0; i < 31; ++i) {
+        for (int i = 0; i < 31; ++i) {
             int v = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in local_addr;
             local_addr.sin_family = AF_INET;
@@ -133,7 +147,7 @@ namespace {
         }
 
         pthread_kill(f, SIGINT);
-        while(started) {
+        while (started) {
             usleep(10);
         }
     }
@@ -152,12 +166,12 @@ namespace {
             p.execute();
             started = false;
         }, NULL);
-        while(!started) {
+        while (!started) {
             usleep(10);
         }
 
         pthread_kill(f, SIGINT);
-        while(started) {
+        while (started) {
             usleep(10);
         }
 
@@ -174,7 +188,7 @@ namespace {
             p.execute();
             started = false;
         }, NULL);
-        while(!started) {
+        while (!started) {
             usleep(10);
         }
 #if 0
@@ -206,7 +220,7 @@ namespace {
         }
 #endif
         pthread_kill(f, SIGINT);
-        while(started) {
+        while (started) {
             usleep(10);
         }
     }

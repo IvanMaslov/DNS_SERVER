@@ -29,7 +29,7 @@ processor::processor() : polling_fd(fd_fabric::epoll_fd()) {
             exit(EXIT_FAILURE);
         }
         return;
-    }, EPOLLIN);
+    });
 }
 
 void processor::execute() {

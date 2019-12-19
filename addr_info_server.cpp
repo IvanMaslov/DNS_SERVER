@@ -20,7 +20,6 @@ using std::bind;
 void addr_info_connection::sock_handle() {
     if (!alive)
         throw server_error("invoke dead connection");
-    string arg;
 
     reload:
     while (pos < len) {
@@ -34,6 +33,7 @@ void addr_info_connection::sock_handle() {
             {
                 std::lock_guard<mutex> lg(owner->work_in);
                 owner->jobs.push(std::make_pair(this, arg));
+                arg.clear();
                 owner->cv.notify_one();
             }
             return;
@@ -53,7 +53,7 @@ void addr_info_connection::sock_handle() {
 addr_info_connection::addr_info_connection(addr_info_server *owner, uniq_fd &&fd)
         : owner(owner),
           stamp(time(NULL)),
-          sock(std::move(fd), owner->executor, [this](void) { this->sock_handle(); }, EPOLLIN) {}
+          sock(std::move(fd), owner->executor, [this]() { this->sock_handle(); }) {}
 
 void addr_info_connection::disconnect() {
     alive = false;
@@ -68,7 +68,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
         : executor(executor),
           port(port),
           sock(uniq_fd(bind(&fd_fabric::socket_fd, port)), executor,
-               [this]() { this->sock_handle(); }, EPOLLIN) {
+               [this]() { this->sock_handle(); }) {
 
     timer = std::make_unique<observed_fd>(uniq_fd(fd_fabric::timer_fd()), executor, [this]() {
         std::lock_guard<mutex> lg(work_out);
@@ -77,7 +77,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
         response_all();
         cv.notify_all();
         return;
-    }, EPOLLIN);
+    });
 
     for (size_t i = 0; i < WORKERS; ++i)
         workers[i] = std::make_unique<thread>([this]() -> void {
@@ -93,7 +93,7 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
                 }
                 try {
                     arg.second = get_addr_info(arg.second);
-                } catch (const an_error& e) {
+                } catch (const an_error &e) {
                     arg.second = "Server Internal Error\n";
                 }
                 {

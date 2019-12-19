@@ -54,7 +54,7 @@ private:
     processor *parent;
     std::function<void(void)> callback;
 public:
-    observed_fd(uniq_fd &&, processor *, std::function<void(void)> callback, uint32_t msk = EPOLLIN);
+    observed_fd(uniq_fd &&, processor *, std::function<void(void)>, uint32_t msk = EPOLLIN);
 
     virtual ~observed_fd();
 };

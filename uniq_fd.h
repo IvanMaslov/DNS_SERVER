@@ -15,17 +15,22 @@ struct uniq_fd {
     int fd = -1;
 
     uniq_fd();
-    explicit uniq_fd(function<int(void)>&&);
+
+    explicit uniq_fd(function<int(void)> &&);
+
     explicit uniq_fd(int);
+
     uniq_fd(uniq_fd &&) noexcept;
 
     ~uniq_fd();
 
-    uniq_fd(uniq_fd const&) = delete;
-    uniq_fd operator=(uniq_fd const&) = delete;
+    uniq_fd(uniq_fd const &) = delete;
 
-    size_t read_c(void*, size_t);
-    size_t write_c(const void*, size_t);
+    uniq_fd operator=(uniq_fd const &) = delete;
+
+    size_t read_c(void *, size_t);
+
+    size_t write_c(const void *, size_t);
 };
 
 // template<> void std::swap<uniq_fd>(uniq_fd&, uniq_fd&) = delete;
