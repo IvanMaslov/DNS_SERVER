@@ -12,20 +12,19 @@
 #include "server_utils.h"
 #include "uniq_fd.h"
 #include "processor.h"
-#include "echo_server.h"
 #include "addr_info_server.h"
 
 namespace {
     using namespace std;
 
     const vector<string> domain_2 = {
-            "neerc.info.ru",
+            // "neerc.info.ru",
             "ipc.susu.ru",
             "vk.com",
     };
 
     const vector<string> result_2 = {
-            "expirepages-kiae-1.nic.ru\nexpirepages-kiae-2.nic.ru\n",
+            // "expirepages-kiae-1.nic.ru\nexpirepages-kiae-2.nic.ru\n",
             "ipc.susu.ru\n",
             "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
     };
@@ -60,7 +59,7 @@ namespace {
         fd_fabric::socket_fd(1234);
         fd_fabric::epoll_fd();
         fd_fabric::signal_fd();
-        fd_fabric::timer_fd();
+        fd_fabric::timer_fd(0, 10000);
         try {
             fd_fabric::socket_fd(1234);
             FAIL() << "MULTI-SOCKET: created";
@@ -72,7 +71,7 @@ namespace {
         }
         fd_fabric::epoll_fd();
         fd_fabric::signal_fd();
-        fd_fabric::timer_fd();
+        fd_fabric::timer_fd(1, 0);
     }
 
     TEST(UNIQ_FD, CONTRACT) {
@@ -102,7 +101,7 @@ namespace {
         //CHECK: sanitizer
         delete e;
     }
-
+#ifdef SERVER_ECHO_SERVER_H
     TEST(ECHO, CONTRACT) {
         processor p;
         echo_server s(&p, 15000);
@@ -176,7 +175,7 @@ namespace {
         }
 
     }
-
+#endif
     TEST(GET_ADDR_INFO, CONNECT) {
         const uint16_t PORT2 = 14124;
         started = false;

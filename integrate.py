@@ -44,6 +44,8 @@ def test_short():
                 failed += 1
             else:
                 print ("Error SHORT:  expected != received")
+                print ("EXPECTED: {}".format(data[e][1]))
+                print ("RECEIVED: {}".format(received))
                 return
 
     print ("SUCCESS SHORT:    {} passed in {} seconds with {} errors".format(TEST_COUNT, (time.time() - start_time),
@@ -74,6 +76,8 @@ def test_long():
                     failed += 1
                 else:
                     print ("Error LONG:  expected != received")
+                    print ("EXPECTED: {}".format(data[e][1]))
+                    print ("RECEIVED: {}".format(received))
                     return
 
 
@@ -110,6 +114,8 @@ def test_huge():
                     failed += 1
                 else:
                     print ("Error HUGE:  expected != received")
+                    print ("EXPECTED: {}".format(data[e][1]))
+                    print ("RECEIVED: {}".format(received))
                     return
 
 

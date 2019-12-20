@@ -83,20 +83,19 @@ an_error::an_error(const string &reason) : reason(reason) {}
 
 string an_error::get_reason() const { return reason; }
 
-int fd_fabric::timer_fd() {
+int fd_fabric::timer_fd(__time_t s, __syscall_slong_t ns) {
     struct itimerspec new_value{};
-    int max_exp, timerfd;
+    int timerfd;
     struct timespec now{};
-    uint64_t exp, tot_exp;
-    ssize_t s;
 
     if (clock_gettime(CLOCK_REALTIME, &now) == -1)
         throw fd_error("clock_gettime system error", fd_error::TIMER_FD);
 
     new_value.it_value.tv_sec = now.tv_sec;
     new_value.it_value.tv_nsec = now.tv_nsec;
-    new_value.it_interval.tv_nsec = 10000; /// 10 microseconds
-    //new_value.it_interval.tv_sec = 1; //DEBUG:timeout
+
+    new_value.it_interval.tv_sec = s;
+    new_value.it_interval.tv_nsec = ns;
 
     timerfd = timerfd_create(CLOCK_REALTIME, 0);
     if (timerfd == -1)

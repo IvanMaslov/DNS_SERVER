@@ -11,9 +11,9 @@
 using std::function;
 
 struct uniq_fd {
-    //FIXME:private
+protected:
     int fd = -1;
-
+public:
     uniq_fd();
 
     explicit uniq_fd(function<int(void)> &&);

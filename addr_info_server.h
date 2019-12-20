@@ -35,7 +35,14 @@ class addr_info_server {
 private:
     uint16_t port;
     processor *executor;
-    observed_fd sock;
+
+    class socket_obs_fd : public observed_fd {
+    public:
+        using observed_fd::observed_fd;
+        int accept();
+    };
+
+    socket_obs_fd sock;
 
     void sock_handle();
 

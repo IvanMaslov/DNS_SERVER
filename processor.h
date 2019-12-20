@@ -25,11 +25,19 @@ class processor {
     friend class observed_fd;
 
 private:
-    const uniq_fd polling_fd;
+    class epoll_unq_fd : public uniq_fd {
+    public:
+        using uniq_fd::uniq_fd;
 
-    void add(observed_fd *, uint32_t);
+        void add(observed_fd *, uint32_t) const;
 
-    void remove(observed_fd *);
+        void remove(observed_fd *) const;
+
+        int wait(epoll_event *, size_t, size_t) const;
+    };
+
+    const epoll_unq_fd polling_fd;
+
 
     unique_ptr<observed_fd> breaker;
 

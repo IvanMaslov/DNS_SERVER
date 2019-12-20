@@ -36,7 +36,7 @@ void processor::execute() {
     executing = true;
     epoll_event pevents[EPOLL_PER_TIME];
     while (executing) {
-        int ready = epoll_wait(polling_fd.fd, pevents, EPOLL_PER_TIME, EPOLL_TIMEOUT);
+        int ready = polling_fd.wait(pevents, EPOLL_PER_TIME, EPOLL_TIMEOUT);
         if (ready == -1) {
             if (executing)
                 throw exec_error("executing ready fail");
@@ -51,20 +51,23 @@ void processor::execute() {
 
 processor::~processor() = default;
 
-void processor::add(observed_fd *sock, uint32_t msk) {
+void processor::epoll_unq_fd::add(observed_fd *sock, uint32_t msk) const {
     epoll_event ev{};
     ev.events = msk;
     ev.data.fd = sock->fd;
     ev.data.ptr = reinterpret_cast<void *>(sock);
-    if (epoll_ctl(polling_fd.fd, EPOLL_CTL_ADD, sock->fd, &ev) != 0)
+    if (epoll_ctl(fd, EPOLL_CTL_ADD, sock->fd, &ev) != 0)
         throw exec_error("epoll add");
 }
 
-void processor::remove(observed_fd *sock) {
-    if (epoll_ctl(polling_fd.fd, EPOLL_CTL_DEL, sock->fd, NULL) != 0) {
+void processor::epoll_unq_fd::remove(observed_fd *sock) const {
+    if (epoll_ctl(fd, EPOLL_CTL_DEL, sock->fd, NULL) != 0) {
         throw exec_error("epoll remove");
     }
+}
 
+int processor::epoll_unq_fd::wait(epoll_event * events, size_t len, size_t timeout) const {
+    return epoll_wait(fd, events, len, timeout);
 }
 
 //DEBUG: force_invoke
@@ -73,10 +76,10 @@ void processor::force_invoke(observed_fd *t) {
 }
 
 observed_fd::observed_fd(uniq_fd &&fd, processor *proc, std::function<void(void)> callback, uint32_t msk)
-        : uniq_fd(std::move(fd)), parent(proc), callback(std::move(callback)){
-    parent->add(this, msk);
+        : uniq_fd(std::move(fd)), parent(proc), callback(std::move(callback)) {
+    parent->polling_fd.add(this, msk);
 }
 
 observed_fd::~observed_fd() {
-    parent->remove(this);
+    parent->polling_fd.remove(this);
 }

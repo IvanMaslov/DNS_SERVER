@@ -72,7 +72,7 @@ namespace fd_fabric {
         ~fd_error() override = default;
     };
 
-    int timer_fd();
+    int timer_fd(__time_t second, __syscall_slong_t nano_second);
 
     int socket_fd(uint16_t port);
 

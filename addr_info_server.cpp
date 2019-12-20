@@ -4,14 +4,8 @@
 
 #include "addr_info_server.h"
 
-#include <cassert>
-#include <sys/socket.h>
-#include <sys/timerfd.h>
 #include <netinet/in.h>
-#include <unistd.h>
 #include <csignal>
-
-//#include <iostream> //DEBUG:cerr
 
 #include <functional>
 
@@ -70,9 +64,8 @@ addr_info_server::addr_info_server(processor *executor, uint16_t port)
           sock(uniq_fd(bind(&fd_fabric::socket_fd, port)), executor,
                [this]() { this->sock_handle(); }) {
 
-    timer = std::make_unique<observed_fd>(uniq_fd(fd_fabric::timer_fd()), executor, [this]() {
+    timer = std::make_unique<observed_fd>(uniq_fd(bind(&fd_fabric::timer_fd, 0, 10000)), executor, [this]() {
         std::lock_guard<mutex> lg(work_out);
-        //std::cerr << jobs.size() << ' ' << results.size() << std::endl; //DEBUG:cerr
         clean_old_connections();
         response_all();
         cv.notify_all();
@@ -110,13 +103,16 @@ void addr_info_server::add_connection(int fd) {
 }
 
 void addr_info_server::sock_handle() {
-    int fd = sock.fd;
-    int conn_fd = accept(fd, nullptr, nullptr);
-    add_connection(conn_fd);
+    int conn;
+    try {
+        conn = sock.accept();
+    } catch (const server_error &e) {
+        return;
+    }
+    add_connection(conn);
 }
 
 void addr_info_server::clean_old_connections() {
-    //if(deleted_connections.size()) std::cerr << "clear: " << deleted_connections.size() << std::endl; //DEBUG:cerr
     while (!deleted_connections.empty()) {
         addr_info_connection *t = *deleted_connections.begin();
         connections.erase(t);
@@ -144,4 +140,11 @@ addr_info_server::~addr_info_server() {
     }
     for (size_t i = 0; i < WORKERS; ++i)
         workers[i]->join();
+}
+
+int addr_info_server::socket_obs_fd::accept() {
+    int res = ::accept(fd, nullptr, nullptr);
+    if (res == -1)
+        throw server_error("Unacceptable connection");
+    return res;
 }
