@@ -17,42 +17,36 @@
 namespace {
     using namespace std;
 
-    const vector<string> domain_2 = {
-            // "neerc.info.ru",
-            "ipc.susu.ru",
-            "vk.com",
+    const vector<pair<string, string>> domains = {
+            {"192.168.1.1", "192.168.1.1\n\n"},
+            {"vk.com", "87.240.137.158\n87.240.139.194\n87.240.190.67\n87.240.190.72\n87.240.190.78\n93.186.225.208\n\n"},
+            {"ya.ru", "0.0.0.0\n87.250.250.242\n\n"},
     };
-
-    const vector<string> result_2 = {
-            // "expirepages-kiae-1.nic.ru\nexpirepages-kiae-2.nic.ru\n",
-            "ipc.susu.ru\n",
-            "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
-    };
-
-
-    const vector<string> domain = {
-            "192.168.1.1",
-            "vk.com",
-            "ya.ru",
-    };
-
-    const vector<string> result = {
-            "192.168.1.1\n\n",
-            "87.240.137.158\n87.240.139.194\n87.240.190.67\n87.240.190.72\n87.240.190.78\n93.186.225.208\n\n",
-            "0.0.0.0\n87.250.250.242\n\n",
-    };
-
     const uint16_t PORT = 1476;
     bool started = false;
 
+#if 0
     TEST(UTIL_TEST, GET_ADDR_NAME_FUNCTIONAL) {
+        const vector<string> domain_2 = {
+                // "neerc.info.ru",
+                "ipc.susu.ru",
+                "vk.com",
+        };
+
+        const vector<string> result_2 = {
+                // "expirepages-kiae-1.nic.ru\nexpirepages-kiae-2.nic.ru\n",
+                "ipc.susu.ru\n",
+                "93.186.225.208\nsrv158-137-240-87.vk.com\nsrv194-139-240-87.vk.com\nsrv67-190-240-87.vk.com\nsrv72-190-240-87.vk.com\nsrv78-190-240-87.vk.com\n"
+        };
+
         for (size_t i = 0; i < domain_2.size(); ++i)
             EXPECT_EQ(get_addr_info_name(domain_2[i]), result_2[i]);
     }
+#endif
 
     TEST(UTIL_TEST, GET_ADDR_FUNCTIONAL) {
-        for (size_t i = 0; i < domain.size(); ++i)
-            EXPECT_EQ(get_addr_info(domain[i]), result[i]);
+        for (size_t i = 0; i < domains.size(); ++i)
+            EXPECT_EQ(get_addr_info(domains[i].first), domains[i].second);
     }
 
     TEST(UTIL_TEST, FABRICS) {
@@ -98,9 +92,9 @@ namespace {
         p.force_invoke(&s2);
         EXPECT_EQ(*e, 16);
 
-        //CHECK: sanitizer
         delete e;
     }
+
 #ifdef SERVER_ECHO_SERVER_H
     TEST(ECHO, CONTRACT) {
         processor p;

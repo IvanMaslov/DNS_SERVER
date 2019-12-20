@@ -51,7 +51,6 @@ public:
 
     void execute();
 
-    //DEBUG: force_invoke
     void force_invoke(observed_fd *t);
 };
 

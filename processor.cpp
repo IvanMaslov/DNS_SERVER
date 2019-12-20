@@ -70,7 +70,6 @@ int processor::epoll_unq_fd::wait(epoll_event * events, size_t len, size_t timeo
     return epoll_wait(fd, events, len, timeout);
 }
 
-//DEBUG: force_invoke
 void processor::force_invoke(observed_fd *t) {
     t->callback();
 }

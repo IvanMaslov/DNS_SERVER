@@ -109,6 +109,7 @@ void addr_info_server::sock_handle() {
     } catch (const server_error &e) {
         return;
     }
+    executor->force_invoke(timer.get());
     add_connection(conn);
 }
 
